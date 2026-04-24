@@ -10,14 +10,23 @@
     height: 100%;
     overflow: hidden;
     font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Yu Gothic UI", sans-serif;
-    background: linear-gradient(135deg, #e8f4ff 0%, #ffe8f0 50%, #e8ffe8 100%);
+    background: #dde4ec;
     user-select: none;
     touch-action: none;
   }
-  #app { position: relative; width: 100%; height: 100%; }
+  #app {
+    position: relative;
+    width: 100%;
+    max-width: 540px;
+    height: 100%;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #e8f4ff 0%, #ffe8f0 50%, #e8ffe8 100%);
+    box-shadow: 0 0 24px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
 
   .header {
-    position: fixed;
+    position: absolute;
     top: 0; left: 0; right: 0;
     z-index: 20;
     padding: 8px 12px;
@@ -627,6 +636,18 @@
 
 <script>
 const app = document.getElementById('app');
+
+// app 相対座標ヘルパー
+function getAppRect() { return app.getBoundingClientRect(); }
+function localRect(el) {
+  const a = getAppRect();
+  const r = el.getBoundingClientRect();
+  return {
+    left: r.left - a.left, top: r.top - a.top,
+    right: r.right - a.left, bottom: r.bottom - a.top,
+    width: r.width, height: r.height,
+  };
+}
 const stages = {
   1: document.getElementById('stage1'),
   2: document.getElementById('stage2'),
@@ -726,9 +747,12 @@ function setupDrag(el, p) {
 }
 
 function getPoint(e) {
-  if (e.touches && e.touches.length > 0) return {x: e.touches[0].clientX, y: e.touches[0].clientY};
-  if (e.changedTouches && e.changedTouches.length > 0) return {x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY};
-  return {x: e.clientX, y: e.clientY};
+  let cx, cy;
+  if (e.touches && e.touches.length > 0) { cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+  else if (e.changedTouches && e.changedTouches.length > 0) { cx = e.changedTouches[0].clientX; cy = e.changedTouches[0].clientY; }
+  else { cx = e.clientX; cy = e.clientY; }
+  const a = getAppRect();
+  return { x: cx - a.left, y: cy - a.top };
 }
 
 document.addEventListener('mousemove', onMove);
@@ -752,9 +776,10 @@ function clampToBox(p) {
     p.x = Math.max(b.x, Math.min(b.x + b.w - size, p.x));
     p.y = Math.max(b.y, Math.min(b.y + b.h - size, p.y));
   } else {
+    const a = getAppRect();
     const margin = 20;
-    p.x = Math.max(margin, Math.min(window.innerWidth - size - margin, p.x));
-    p.y = Math.max(80, Math.min(window.innerHeight - 100, p.y));
+    p.x = Math.max(margin, Math.min(a.width - size - margin, p.x));
+    p.y = Math.max(80, Math.min(a.height - 100, p.y));
   }
 }
 
@@ -877,7 +902,7 @@ function showStage1Result(key) {
   clearParticles();
   stages[1].querySelectorAll('.molecule').forEach(m => m.remove());
   const beaker = document.querySelector('#stage1 .beaker.s1');
-  const rect = beaker.getBoundingClientRect();
+  const rect = localRect(beaker);
   const box = { x: rect.left + 10, y: rect.top + 30, w: rect.width - 80, h: rect.height - 60 };
   const bulb = document.getElementById('bulb1');
   const badge = document.getElementById('result1');
@@ -931,7 +956,7 @@ function startStage2() {
   showStage(2);
   setTimeout(() => {
     const beaker = document.querySelector('#stage2 .beaker.s2');
-    const rect = beaker.getBoundingClientRect();
+    const rect = localRect(beaker);
     for (let i = 0; i < 5; i++) {
       const crystal = document.createElement('div');
       crystal.className = 'molecule';
@@ -955,7 +980,7 @@ function dissolveCrystal(crystal) {
   const cy = parseFloat(crystal.style.top);
   crystal.remove();
   const beaker = document.querySelector('#stage2 .beaker.s2');
-  const rect = beaker.getBoundingClientRect();
+  const rect = localRect(beaker);
   const box = { x: rect.left + 10, y: rect.top + 30, w: rect.width - 80, h: rect.height - 60 };
   const na = makeIon('na', cx - 8, cy, { stageBox: box });
   const cl = makeIon('cl', cx + 40, cy, { stageBox: box });
@@ -989,7 +1014,7 @@ document.getElementById('evaporate2').addEventListener('click', () => {
       if (h <= 0) clearInterval(evapAnim2);
     }, 22);
   }
-  const bRect = beaker2.getBoundingClientRect();
+  const bRect = localRect(beaker2);
   // 蒸気エフェクト
   for (let i = 0; i < 8; i++) {
     setTimeout(() => {
@@ -1052,7 +1077,7 @@ function startStage3() {
 
 function placeCuCl2() {
   const beaker = document.querySelector('#stage3 .beaker.s3');
-  const rect = beaker.getBoundingClientRect();
+  const rect = localRect(beaker);
   const box = { x: rect.left + 6, y: rect.top + 30, w: rect.width - 12, h: rect.height - 60 };
   for (let i = 0; i < 2; i++) {
     const p = makeIon('cu', box.x + 20 + Math.random()*(box.w-100), box.y + 20 + Math.random()*(box.h-60), { stageBox: box });
@@ -1076,7 +1101,7 @@ document.getElementById('powerOn3').addEventListener('click', () => {
   const beaker = document.querySelector('#stage3 .beaker.s3');
 
   stage3Interval = setInterval(() => {
-    const beakerRect = beaker.getBoundingClientRect();
+    const beakerRect = localRect(beaker);
     const minusPoleX = beakerRect.left + beakerRect.width * 0.20;
     const plusPoleX = beakerRect.left + beakerRect.width * 0.80;
     for (const p of particles.slice()) {
@@ -1197,7 +1222,7 @@ function setupStage4Round() {
     <div class="sub" id="progress4">${IONS[q.cation].symbol}：0／${q.cN}　${IONS[q.anion].symbol}：0／${q.aN}</div>
   `;
   stages[4].appendChild(card);
-  const W = window.innerWidth;
+  const W = app.clientWidth;
   for (let i = 0; i < q.cN + 2; i++) {
     const x = 20 + (i%2)*70;
     const y = 180 + Math.floor(i/2)*85;
@@ -1206,7 +1231,7 @@ function setupStage4Round() {
     particles.push(p);
   }
   const aDef = IONS[q.anion];
-  const rightBase = W - (aDef.size==='big' ? 120 : 100);
+  const rightBase = W - (aDef.size==='big' ? 100 : 80);
   for (let i = 0; i < q.aN + 2; i++) {
     const x = rightBase - (i%2)*70;
     const y = 180 + Math.floor(i/2)*85;
@@ -1220,7 +1245,7 @@ function onDropStage4(p) {
   const q = COMPOUNDS[stage4Index];
   const card = document.getElementById('targetCard4');
   if (!card) return;
-  const rect = card.getBoundingClientRect();
+  const rect = localRect(card);
   const inside = p.x + 30 > rect.left && p.x + 30 < rect.right && p.y + 30 > rect.top && p.y + 30 < rect.bottom;
   if (!inside) return;
   if (p.type === q.cation && stage4Dropped.cation < q.cN) {
@@ -1273,7 +1298,7 @@ function updateStage4Progress() {
 function finishStage4Round() {
   const card = document.getElementById('targetCard4');
   if (card) {
-    const rect = card.getBoundingClientRect();
+    const rect = localRect(card);
     sparkAt(rect.left + rect.width/2, rect.top + rect.height/2, '🎉');
     sfxSuccess();
   }
@@ -1316,7 +1341,7 @@ function startStage5() {
 
 function placeStage5Initial() {
   const leftBeaker = document.querySelector('#stage5 .beaker.s5-left');
-  const lRect = leftBeaker.getBoundingClientRect();
+  const lRect = localRect(leftBeaker);
   const lBox = { x: lRect.left + 8, y: lRect.top + 20, w: lRect.width - 70, h: lRect.height - 40 };
   for (let i = 0; i < 4; i++) {
     const h = makeIon('h', lBox.x + Math.random()*(lBox.w-30), lBox.y + Math.random()*(lBox.h-30), {stageBox: lBox});
@@ -1326,7 +1351,7 @@ function placeStage5Initial() {
     stage5H++; stage5Cl++;
   }
   const rightBeaker = document.querySelector('#stage5 .beaker.s5-right');
-  const rRect = rightBeaker.getBoundingClientRect();
+  const rRect = localRect(rightBeaker);
   const rBox = { x: rRect.left + 8, y: rRect.top + 20, w: rRect.width - 70, h: rRect.height - 40 };
   for (let i = 0; i < 4; i++) {
     const na = makeIon('na', rBox.x + Math.random()*(rBox.w-30), rBox.y + Math.random()*(rBox.h-30), {stageBox: rBox});
@@ -1344,8 +1369,8 @@ document.getElementById('mix5').addEventListener('click', () => {
   sfxWater();
   const rightBeaker = document.querySelector('#stage5 .beaker.s5-right');
   const leftBeaker = document.querySelector('#stage5 .beaker.s5-left');
-  const rRect = rightBeaker.getBoundingClientRect();
-  const lRect = leftBeaker.getBoundingClientRect();
+  const rRect = localRect(rightBeaker);
+  const lRect = localRect(leftBeaker);
   const lBox = { x: lRect.left + 8, y: lRect.top + 20, w: lRect.width - 70, h: lRect.height - 40 };
   const moveCount = 2;
   const ohCandidates = particles.filter(p => p.type === 'oh' && !p.paired && p.stageBox && p.stageBox.x > rRect.left - 10);
@@ -1411,7 +1436,7 @@ function updatePh() {
   // barの左端位置を計算
   const bar = document.querySelector('#stage5 .ph-bar');
   if (bar) {
-    const barRect = bar.getBoundingClientRect();
+    const barRect = localRect(bar);
     const leftPx = barRect.left + (phVal - 1) / 12 * barRect.width - 4;
     marker.style.left = leftPx + 'px';
     marker.style.top = (barRect.top - 8) + 'px';
@@ -1439,8 +1464,8 @@ document.getElementById('evaporate5').addEventListener('click', () => {
     if (h5 <= 0) clearInterval(evapAnim5);
   }, 22);
   // 蒸気エフェクト
-  const leftBeakerRect = document.querySelector('#stage5 .beaker.s5-left').getBoundingClientRect();
-  const rightBeakerRect = document.querySelector('#stage5 .beaker.s5-right').getBoundingClientRect();
+  const leftBeakerRect = localRect(document.querySelector('#stage5 .beaker.s5-left'));
+  const rightBeakerRect = localRect(document.querySelector('#stage5 .beaker.s5-right'));
   for (let i = 0; i < 8; i++) {
     setTimeout(() => {
       const baseRect = (i % 2 === 0) ? leftBeakerRect : rightBeakerRect;
