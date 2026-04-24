@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>イオンラボ ～中3版～</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: "Hiragino Maru Gothic ProN", "Rounded Mplus 1c", "Yu Gothic UI", sans-serif;
+    background: linear-gradient(135deg, #e8f4ff 0%, #ffe8f0 50%, #e8ffe8 100%);
+    user-select: none;
+    touch-action: none;
+  }
+  #app { position: relative; width: 100%; height: 100%; }
+
+  .header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 20;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+  }
+  .title {
+    font-size: 15px;
+    font-weight: bold;
+    color: #4a7ec8;
+    text-shadow: 0 2px 0 #fff, 0 0 8px rgba(255,255,255,0.9);
+    pointer-events: auto;
+  }
+  .stage-indicator { display: flex; gap: 5px; pointer-events: auto; }
+  .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; border: 2px solid #b6d1ff;
+    transition: all 0.3s;
+  }
+  .dot.active { background: #6fa1ff; transform: scale(1.2); }
+
+  .stage { position: absolute; inset: 0; display: none; }
+  .stage.active { display: block; }
+
+  .message {
+    position: absolute;
+    top: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.95);
+    padding: 8px 14px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    z-index: 10;
+    text-align: center;
+    max-width: 86%;
+    line-height: 1.4;
+  }
+  .message .hint { font-size: 10px; font-weight: normal; color: #999; margin-top: 2px; }
+  .message .stage-label {
+    display: inline-block;
+    background: #ffd88a;
+    color: #8b5a00;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-right: 6px;
+  }
+
+  .ion {
+    position: absolute;
+    width: 62px; height: 62px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: grab;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18), inset 0 -4px 8px rgba(0,0,0,0.15), inset 0 4px 8px rgba(255,255,255,0.4);
+    touch-action: none;
+  }
+  .ion.grabbing { cursor: grabbing; transform: scale(1.05); }
+  .ion.big { width: 78px; height: 78px; }
+
+  .ion .face { position: absolute; width: 100%; height: 100%; pointer-events: none; }
+  .ion .eye {
+    position: absolute;
+    width: 7px; height: 7px;
+    background: #333;
+    border-radius: 50%;
+    top: 42%;
+  }
+  .ion .eye.left { left: 28%; }
+  .ion .eye.right { right: 28%; }
+  .ion .eye::after {
+    content: '';
+    position: absolute;
+    width: 2.5px; height: 2.5px;
+    background: #fff;
+    border-radius: 50%;
+    top: 1px; left: 2px;
+  }
+  .ion .mouth {
+    position: absolute;
+    width: 12px; height: 6px;
+    border-bottom: 2px solid #333;
+    border-radius: 0 0 12px 12px;
+    left: 50%;
+    top: 62%;
+    transform: translateX(-50%);
+  }
+  .ion .cheek {
+    position: absolute;
+    width: 8px; height: 5px;
+    background: rgba(255,100,150,0.5);
+    border-radius: 50%;
+    top: 58%;
+  }
+  .ion .cheek.left { left: 12%; }
+  .ion .cheek.right { right: 12%; }
+
+  .ion .symbol {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 0 3px rgba(0,0,0,0.2);
+    letter-spacing: -0.5px;
+  }
+  .ion.big .symbol { font-size: 18px; }
+
+  .ion .charge {
+    position: absolute;
+    top: 3%;
+    right: -3%;
+    background: #fff;
+    color: #333;
+    font-weight: bold;
+    font-size: 11px;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 10px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .ion.big .charge { font-size: 13px; min-width: 22px; height: 22px; }
+
+  .ion.plus { background: radial-gradient(circle at 30% 30%, #ff9fb8, #e85a8c); }
+  .ion.minus { background: radial-gradient(circle at 30% 30%, #9fc8ff, #5a8ce8); }
+  .ion.na { background: radial-gradient(circle at 30% 30%, #ffe088, #f5b820); }
+  .ion.cl { background: radial-gradient(circle at 30% 30%, #a8e8a8, #50b850); }
+  .ion.h { background: radial-gradient(circle at 30% 30%, #ffb0a0, #e8705c); }
+  .ion.oh { background: radial-gradient(circle at 30% 30%, #c0a0ff, #8a5de8); }
+  .ion.cu { background: radial-gradient(circle at 30% 30%, #ffc088, #cc6820); }
+  .ion.ca { background: radial-gradient(circle at 30% 30%, #e8e8b0, #b0b060); }
+  .ion.so4 { background: radial-gradient(circle at 30% 30%, #a0d8ff, #4080c8); }
+  .ion.k { background: radial-gradient(circle at 30% 30%, #ffe0c0, #e8a050); }
+  .ion.no3 { background: radial-gradient(circle at 30% 30%, #c8e0a8, #70a848); }
+
+  .ion.paired { animation: pulse 0.5s; }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+  .ion.disappearing { animation: fadeOut 0.8s forwards; pointer-events: none; }
+  @keyframes fadeOut {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.3); opacity: 0; }
+  }
+  .ion.arrival { animation: arrive 0.6s forwards; }
+  @keyframes arrive {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .molecule {
+    position: absolute;
+    background: linear-gradient(135deg, #fff, #eee);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #555;
+    font-weight: bold;
+    padding: 6px 10px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .cloud {
+    position: absolute;
+    font-size: 28px;
+    pointer-events: none;
+    z-index: 11;
+    animation: floatUp 2.2s ease-out forwards;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0); opacity: 0.9; }
+    100% { transform: translateY(-180px); opacity: 0; }
+  }
+  .molecule .icon { font-size: 20px; margin-right: 4px; }
+
+  .beaker {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid #b8d8e8;
+    border-top: none;
+    border-radius: 0 0 26px 26px;
+    background: rgba(200, 230, 245, 0.25);
+    overflow: hidden;
+    z-index: 2;
+  }
+  .beaker.s1 { bottom: 90px; width: min(260px, 90%); height: 260px; }
+  .beaker.s2 { bottom: 90px; width: min(300px, 94%); height: 290px; }
+  .beaker.s3 { bottom: 90px; width: min(340px, 94%); height: 290px; }
+  .beaker.s5-left, .beaker.s5-right { bottom: 90px; width: min(140px, 38%); height: 240px; }
+  .beaker.s5-left { left: 22%; transform: none; }
+  .beaker.s5-right { left: 58%; transform: none; }
+
+  .water {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 80%;
+    background: linear-gradient(180deg, rgba(150,210,240,0.4), rgba(100,180,230,0.6));
+    transition: height 1.8s ease-in-out, background 0.6s;
+  }
+  .water.acid { background: linear-gradient(180deg, rgba(255,220,100,0.4), rgba(240,180,50,0.6)); }
+  .water.alkali { background: linear-gradient(180deg, rgba(150,230,180,0.4), rgba(80,180,120,0.6)); }
+  .water.neutral { background: linear-gradient(180deg, rgba(150,240,220,0.4), rgba(80,210,180,0.6)); }
+  .water::before {
+    content: '';
+    position: absolute;
+    top: -3px; left: 0; right: 0;
+    height: 6px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 50%;
+  }
+
+  .electrode {
+    position: absolute;
+    top: -20px;
+    width: 18px;
+    height: 200px;
+    background: linear-gradient(180deg, #999, #555);
+    z-index: 5;
+    border-radius: 3px;
+  }
+  .electrode.left { left: 20%; }
+  .electrode.right { right: 20%; }
+  .electrode::after {
+    content: attr(data-label);
+    position: absolute;
+    top: -26px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+  }
+  .electrode.plus-pole { background: linear-gradient(180deg, #e85a8c, #a03058); }
+  .electrode.minus-pole { background: linear-gradient(180deg, #5a8ce8, #3058a0); }
+
+  .bulb {
+    position: absolute;
+    top: 240px;
+    right: 14px;
+    font-size: 42px;
+    z-index: 6;
+    transition: all 0.3s;
+    filter: grayscale(1) brightness(0.7);
+  }
+  .bulb.on {
+    filter: grayscale(0) brightness(1.3) drop-shadow(0 0 16px #ffdd44) drop-shadow(0 0 32px #ffaa00);
+    animation: bulbOn 0.6s;
+  }
+  @keyframes bulbOn {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+
+  .substance-picker {
+    position: absolute;
+    top: 105px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    width: 94%;
+    max-width: 360px;
+    z-index: 11;
+  }
+  .substance {
+    padding: 6px 4px;
+    background: #fff;
+    border: 2px solid #ddd;
+    border-radius: 11px;
+    font-size: 10.5px;
+    font-weight: bold;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .substance:hover { transform: translateY(-2px); }
+  .substance.selected { background: #ffd88a; border-color: #f5b820; color: #8b5a00; }
+  .substance .icon { font-size: 13px; margin-right: 1px; display: block; margin-bottom: 1px; }
+
+  .result-badge {
+    position: absolute;
+    top: 210px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: bold;
+    z-index: 9;
+    display: none;
+    text-align: center;
+  }
+  .result-badge.on { display: block; }
+  .result-badge.electrolyte { background: #ffe0b0; color: #c85800; }
+  .result-badge.nonelectrolyte { background: #d8d8d8; color: #555; }
+
+  .ph-bar {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 400px;
+    height: 28px;
+    background: linear-gradient(90deg, #e85a5a 0%, #e8b05a 20%, #e8e85a 40%, #a0e85a 50%, #5ae8a0 55%, #5ae8e8 70%, #5a80e8 90%, #8050e8 100%);
+    border-radius: 14px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    z-index: 7;
+  }
+  .ph-marker {
+    position: absolute;
+    top: 92px;
+    width: 8px;
+    height: 44px;
+    background: #333;
+    border-radius: 4px;
+    transition: left 0.4s ease-out;
+    z-index: 8;
+  }
+  .ph-marker::after {
+    content: attr(data-ph);
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: bold;
+    background: #fff;
+    padding: 1px 5px;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    white-space: nowrap;
+  }
+
+  .counter {
+    position: absolute;
+    top: 240px;
+    left: 12px;
+    background: rgba(255,255,255,0.95);
+    padding: 6px 12px;
+    border-radius: 14px;
+    font-weight: bold;
+    color: #4a7ec8;
+    font-size: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    z-index: 10;
+    max-width: 140px;
+    line-height: 1.4;
+  }
+
+  .buttons {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 15;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 96%;
+  }
+  .btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 22px;
+    font-size: 13px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    background: linear-gradient(135deg, #ffb6d1, #ff6fa1);
+    color: #fff;
+    box-shadow: 0 3px 8px rgba(232,90,140,0.3);
+    transition: transform 0.1s;
+    touch-action: manipulation;
+  }
+  .btn:active { transform: translateY(2px); }
+  .btn.secondary { background: linear-gradient(135deg, #b6d1ff, #6fa1ff); box-shadow: 0 3px 8px rgba(90,140,232,0.3); }
+  .btn.warm { background: linear-gradient(135deg, #ffd88a, #ffa500); box-shadow: 0 3px 8px rgba(255,165,0,0.3); }
+  .btn.cool { background: linear-gradient(135deg, #a8e8a8, #50b850); box-shadow: 0 3px 8px rgba(80,184,80,0.3); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .spark {
+    position: absolute;
+    pointer-events: none;
+    font-size: 22px;
+    animation: sparkle 0.8s ease-out forwards;
+  }
+  @keyframes sparkle {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  }
+
+  .speech {
+    position: absolute;
+    background: #fff;
+    border-radius: 16px;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: #555;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    pointer-events: none;
+    z-index: 12;
+    font-weight: bold;
+    animation: speechPop 0.3s;
+  }
+  @keyframes speechPop {
+    0% { transform: scale(0); }
+    100% { transform: scale(1); }
+  }
+
+  .ion-compound {
+    position: absolute;
+    background: #fff;
+    padding: 10px 14px;
+    border-radius: 14px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    font-size: 14px;
+    font-weight: bold;
+    color: #4a7ec8;
+    z-index: 11;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .ion-compound .sub { font-size: 11px; color: #888; font-weight: normal; }
+
+  .finale {
+    position: absolute;
+    inset: 0;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255,255,255,0.97);
+    z-index: 30;
+    flex-direction: column;
+    padding: 20px;
+    text-align: center;
+    overflow-y: auto;
+  }
+  .finale.show { display: flex; }
+  .finale h1 { font-size: 22px; color: #4a7ec8; margin-bottom: 10px; }
+  .finale h2 { font-size: 14px; color: #e85a8c; margin: 10px 0 4px; }
+  .finale p { font-size: 13px; color: #555; line-height: 1.7; max-width: 480px; }
+  .finale .again-btn { margin-top: 16px; }
+
+  .stage-number {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.7);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    color: #999;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="title">⚡ イオンラボ</div>
+    <div class="stage-indicator">
+      <div class="dot" data-stage="1"></div>
+      <div class="dot" data-stage="2"></div>
+      <div class="dot" data-stage="3"></div>
+      <div class="dot" data-stage="4"></div>
+      <div class="dot" data-stage="5"></div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage1">
+    <div class="stage-number">Stage 1 / 5</div>
+    <div class="message">
+      <span class="stage-label">でんかいしつ？</span>水にとかして電流がながれるかな？
+      <div class="hint">物質をえらんでビーカーに入れよう</div>
+    </div>
+    <div class="substance-picker" id="picker1">
+      <button class="substance" data-key="nacl"><span class="icon">🧂</span>食塩</button>
+      <button class="substance" data-key="sugar"><span class="icon">🍬</span>さとう</button>
+      <button class="substance" data-key="ethanol"><span class="icon">🍶</span>エタノール</button>
+      <button class="substance" data-key="hcl"><span class="icon">⚗️</span>うすい塩酸</button>
+      <button class="substance" data-key="cucl2"><span class="icon">💎</span>塩化銅</button>
+      <button class="substance" data-key="naoh"><span class="icon">🧪</span>水ナトリウム</button>
+    </div>
+    <div class="result-badge" id="result1"></div>
+    <div class="counter" id="counter1">しらべた：0／6</div>
+    <div class="beaker s1"><div class="water"></div></div>
+    <div class="bulb" id="bulb1">💡</div>
+    <div class="buttons">
+      <button class="btn" id="next1" disabled>つぎへ →</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage2">
+    <div class="stage-number">Stage 2 / 5</div>
+    <div class="message">
+      <span class="stage-label">でんり</span>食塩が水にとけるとき、中では何が起きてる？
+      <div class="hint">🧂をタップして水にとかそう</div>
+    </div>
+    <div class="counter" id="counter2">バラバラに：0こ</div>
+    <div class="beaker s2"><div class="water"></div></div>
+    <div class="buttons">
+      <button class="btn secondary" id="back2">← もどる</button>
+      <button class="btn warm" id="evaporate2" disabled>🔥 水をじょうはつ</button>
+      <button class="btn" id="next2" disabled>つぎへ →</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage3">
+    <div class="stage-number">Stage 3 / 5</div>
+    <div class="message">
+      <span class="stage-label">でんきぶんかい</span>塩化銅水溶液に電気をながすと…！
+      <div class="hint">Cu²⁺はおでこに「Cu」、胸に「2+」</div>
+    </div>
+    <div class="counter" id="counter3">Cu：0 ／ Cl₂：0</div>
+    <div class="beaker s3">
+      <div class="water"></div>
+      <div class="electrode left minus-pole" data-label="−"></div>
+      <div class="electrode right plus-pole" data-label="＋"></div>
+    </div>
+    <div class="buttons">
+      <button class="btn secondary" id="back3">← もどる</button>
+      <button class="btn cool" id="powerOn3">🔌 電気ON</button>
+      <button class="btn" id="next3" disabled>つぎへ →</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage4">
+    <div class="stage-number">Stage 4 / 5</div>
+    <div class="message">
+      <span class="stage-label">かごうぶつ</span>プラスとマイナスの数を合わせて化合物を作ろう！
+      <div class="hint">2+と1−なら、2対1でペア</div>
+    </div>
+    <div class="counter" id="counter4">作った化合物：0／4</div>
+    <div class="buttons">
+      <button class="btn secondary" id="back4">← もどる</button>
+      <button class="btn warm" id="reset4">やりなおし</button>
+      <button class="btn" id="next4" disabled>つぎへ →</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage5">
+    <div class="stage-number">Stage 5 / 5</div>
+    <div class="message" id="msg5">
+      <span class="stage-label">ちゅうわ</span>塩酸(H⁺)と水酸化ナトリウム(OH⁻)を混ぜると？
+      <div class="hint">H⁺とOH⁻があうと何になる？</div>
+    </div>
+    <div class="ph-bar"></div>
+    <div class="ph-marker" id="phMarker" data-ph="pH 1"></div>
+    <div class="beaker s5-left"><div class="water acid" id="water5a"></div></div>
+    <div class="beaker s5-right"><div class="water alkali" id="water5b"></div></div>
+    <div class="counter" id="counter5">H₂O：0こ</div>
+    <div class="buttons">
+      <button class="btn secondary" id="back5">← もどる</button>
+      <button class="btn cool" id="mix5">💧 混ぜる</button>
+      <button class="btn warm" id="evaporate5" disabled>🔥 じょうはつ</button>
+      <button class="btn" id="finish5" disabled>ゴール！ →</button>
+    </div>
+  </div>
+
+  <div class="finale" id="finale">
+    <h1>🎉 今日わかったこと 🎉</h1>
+    <h2>① 電解質と非電解質</h2>
+    <p>水にとかして電気が流れるものを「電解質」、流れないものを「非電解質」という。</p>
+    <h2>② 電離</h2>
+    <p>電解質は水にとけると陽イオンと陰イオンにバラバラになる。<br>例：NaCl → Na⁺ + Cl⁻</p>
+    <h2>③ 電気分解</h2>
+    <p>電圧を加えると、陽イオンは−極へ、陰イオンは＋極へ動く。<br>CuCl₂ → Cu + Cl₂</p>
+    <h2>④ 化合物と電荷バランス</h2>
+    <p>陽イオンの＋の合計と陰イオンの−の合計が等しくなる数で結びつく。<br>例：Cu²⁺ + 2Cl⁻ → CuCl₂</p>
+    <h2>⑤ 中和</h2>
+    <p>酸のH⁺とアルカリのOH⁻が合わさって水になる。<br>H⁺ + OH⁻ → H₂O<br>残ったイオンが「塩（えん）」になる。</p>
+    <button class="btn again-btn" id="restart">もういちど</button>
+  </div>
+</div>
+
+<script>
+const app = document.getElementById('app');
+const stages = {
+  1: document.getElementById('stage1'),
+  2: document.getElementById('stage2'),
+  3: document.getElementById('stage3'),
+  4: document.getElementById('stage4'),
+  5: document.getElementById('stage5'),
+};
+const dots = document.querySelectorAll('.dot');
+const finale = document.getElementById('finale');
+
+let currentStage = 1;
+let particles = [];
+let draggingParticle = null;
+let dragOffset = {x:0, y:0};
+
+let audioCtx = null;
+function beep(freq, dur=0.1, type='sine') {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.frequency.value = freq; o.type = type;
+    g.gain.value = 0.1;
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch(e){}
+}
+function sfxPair() { beep(800, 0.1); setTimeout(()=>beep(1200,0.15),80); }
+function sfxReject() { beep(200, 0.15, 'sawtooth'); }
+function sfxSuccess() { beep(1000,0.08); setTimeout(()=>beep(1400,0.08),60); setTimeout(()=>beep(1800,0.12),120); }
+function sfxWater() { beep(400,0.3,'sine'); }
+function sfxClick() { beep(600, 0.05); }
+
+const IONS = {
+  na:   { symbol:'Na',  charge: 1, size:'normal' },
+  cl:   { symbol:'Cl',  charge:-1, size:'normal' },
+  h:    { symbol:'H',   charge: 1, size:'normal' },
+  oh:   { symbol:'OH',  charge:-1, size:'normal' },
+  cu:   { symbol:'Cu',  charge: 2, size:'big' },
+  ca:   { symbol:'Ca',  charge: 2, size:'big' },
+  so4:  { symbol:'SO₄', charge:-2, size:'big' },
+  k:    { symbol:'K',   charge: 1, size:'normal' },
+  no3:  { symbol:'NO₃', charge:-1, size:'normal' },
+};
+
+function chargeLabel(c) {
+  if (c === 1) return '+';
+  if (c === -1) return '−';
+  if (c > 0) return c + '+';
+  if (c < 0) return Math.abs(c) + '−';
+  return '';
+}
+
+function makeIon(type, x, y, options={}) {
+  const def = IONS[type];
+  const el = document.createElement('div');
+  el.className = 'ion ' + type + (def.size==='big' ? ' big' : '');
+  el.innerHTML = `
+    <div class="face">
+      <div class="cheek left"></div>
+      <div class="cheek right"></div>
+      <div class="eye left"></div>
+      <div class="eye right"></div>
+      <div class="mouth"></div>
+      <div class="symbol">${def.symbol}</div>
+      <div class="charge">${chargeLabel(def.charge)}</div>
+    </div>
+  `;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  const p = {
+    el, x, y, vx:0, vy:0,
+    type, charge: def.charge, size: def.size,
+    paired:false, pairedWith:null,
+    stageBox: options.stageBox || null,
+    locked: options.locked || false,
+  };
+  setupDrag(el, p);
+  return p;
+}
+
+function setupDrag(el, p) {
+  const onDown = (e) => {
+    if (p.paired || p.locked) return;
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    e.preventDefault();
+    draggingParticle = p;
+    el.classList.add('grabbing');
+    el.style.zIndex = 20;
+    const pt = getPoint(e);
+    dragOffset.x = pt.x - p.x;
+    dragOffset.y = pt.y - p.y;
+  };
+  el.addEventListener('mousedown', onDown);
+  el.addEventListener('touchstart', onDown, {passive:false});
+}
+
+function getPoint(e) {
+  if (e.touches && e.touches.length > 0) return {x: e.touches[0].clientX, y: e.touches[0].clientY};
+  if (e.changedTouches && e.changedTouches.length > 0) return {x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY};
+  return {x: e.clientX, y: e.clientY};
+}
+
+document.addEventListener('mousemove', onMove);
+document.addEventListener('touchmove', onMove, {passive:false});
+document.addEventListener('mouseup', onUp);
+document.addEventListener('touchend', onUp);
+
+function onMove(e) {
+  if (!draggingParticle) return;
+  e.preventDefault();
+  const pt = getPoint(e);
+  draggingParticle.x = pt.x - dragOffset.x;
+  draggingParticle.y = pt.y - dragOffset.y;
+  clampToBox(draggingParticle);
+}
+
+function clampToBox(p) {
+  const size = p.size === 'big' ? 78 : 62;
+  if (p.stageBox) {
+    const b = p.stageBox;
+    p.x = Math.max(b.x, Math.min(b.x + b.w - size, p.x));
+    p.y = Math.max(b.y, Math.min(b.y + b.h - size, p.y));
+  } else {
+    const margin = 20;
+    p.x = Math.max(margin, Math.min(window.innerWidth - size - margin, p.x));
+    p.y = Math.max(80, Math.min(window.innerHeight - 100, p.y));
+  }
+}
+
+function onUp() {
+  if (draggingParticle) {
+    const released = draggingParticle;
+    released.el.classList.remove('grabbing');
+    released.el.style.zIndex = 1;
+    draggingParticle = null;
+    if (currentStage === 4) onDropStage4(released);
+  }
+}
+
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+function step() {
+  // ステージ3では同符号反発を無効（電極に集まる必要がある）
+  if (currentStage !== 3) {
+    for (let i = 0; i < particles.length; i++) {
+      const a = particles[i];
+      if (a.paired || a.locked) continue;
+      for (let j = i+1; j < particles.length; j++) {
+        const b = particles[j];
+        if (b.paired || b.locked) continue;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const d = Math.hypot(dx, dy);
+        if (d < 1) continue;
+        const ux = dx/d, uy = dy/d;
+        if (a.charge * b.charge > 0) {
+          if (d < 70) {
+            const f = (70 - d) * 0.02;
+            a.vx -= ux * f; a.vy -= uy * f;
+            b.vx += ux * f; b.vy += uy * f;
+          }
+        }
+      }
+    }
+  }
+  for (const p of particles) {
+    if (p === draggingParticle || p.locked) { p.vx = 0; p.vy = 0; }
+    else {
+      p.vx *= 0.9; p.vy *= 0.9;
+      p.x += p.vx; p.y += p.vy;
+      clampToBox(p);
+    }
+    p.el.style.left = p.x + 'px';
+    p.el.style.top = p.y + 'px';
+  }
+  requestAnimationFrame(step);
+}
+requestAnimationFrame(step);
+
+function sparkAt(x, y, text='✨') {
+  const s = document.createElement('div');
+  s.className = 'spark';
+  s.textContent = text;
+  s.style.left = x + 'px';
+  s.style.top = y + 'px';
+  app.appendChild(s);
+  setTimeout(() => s.remove(), 800);
+}
+
+function clearParticles() {
+  particles.forEach(p => p.el.remove());
+  particles = [];
+}
+
+function showStage(n) {
+  Object.values(stages).forEach(s => s.classList.remove('active'));
+  stages[n].classList.add('active');
+  dots.forEach(d => {
+    d.classList.toggle('active', parseInt(d.dataset.stage) <= n);
+  });
+  currentStage = n;
+}
+
+// ===== ステージ1：電解質か非電解質か =====
+const SUBSTANCES = {
+  nacl:    { name: '食塩', jp:'塩化ナトリウム', type:'electrolyte', ions:[{type:'na',n:1},{type:'cl',n:1}] },
+  sugar:   { name: 'さとう', jp:'ショ糖', type:'nonelectrolyte', molecule:'🍬' },
+  ethanol: { name: 'エタノール', jp:'エタノール', type:'nonelectrolyte', molecule:'🍶' },
+  hcl:     { name: 'うすい塩酸', jp:'塩化水素', type:'electrolyte', ions:[{type:'h',n:1},{type:'cl',n:1}] },
+  cucl2:   { name: '塩化銅', jp:'塩化銅', type:'electrolyte', ions:[{type:'cu',n:1},{type:'cl',n:2}] },
+  naoh:    { name: '水酸化Na', jp:'水酸化ナトリウム', type:'electrolyte', ions:[{type:'na',n:1},{type:'oh',n:1}] },
+};
+
+let stage1Investigated = new Set();
+
+function startStage1() {
+  stage1Investigated = new Set();
+  document.getElementById('counter1').textContent = 'しらべた：0／6';
+  document.getElementById('result1').classList.remove('on');
+  document.getElementById('bulb1').className = 'bulb';
+  document.getElementById('next1').disabled = true;
+  clearParticles();
+  stages[1].querySelectorAll('.molecule, .spark').forEach(e => e.remove());
+  document.querySelectorAll('#stage1 .substance').forEach(b => b.classList.remove('selected'));
+  showStage(1);
+}
+
+document.querySelectorAll('#stage1 .substance').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    sfxClick();
+    document.querySelectorAll('#stage1 .substance').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    const key = btn.dataset.key;
+    showStage1Result(key);
+    stage1Investigated.add(key);
+    document.getElementById('counter1').textContent = `しらべた：${stage1Investigated.size}／6`;
+    if (stage1Investigated.size >= 3) {
+      document.getElementById('next1').disabled = false;
+    }
+  });
+});
+
+function showStage1Result(key) {
+  const sub = SUBSTANCES[key];
+  clearParticles();
+  stages[1].querySelectorAll('.molecule').forEach(m => m.remove());
+  const beaker = document.querySelector('#stage1 .beaker.s1');
+  const rect = beaker.getBoundingClientRect();
+  const box = { x: rect.left + 10, y: rect.top + 30, w: rect.width - 80, h: rect.height - 60 };
+  const bulb = document.getElementById('bulb1');
+  const badge = document.getElementById('result1');
+
+  if (sub.type === 'electrolyte') {
+    bulb.className = 'bulb on';
+    badge.className = 'result-badge on electrolyte';
+    badge.textContent = `✅ 電流が流れる → ${sub.name}は電解質！`;
+    sfxSuccess();
+    sub.ions.forEach(ion => {
+      for (let k = 0; k < ion.n * 3; k++) {
+        const x = box.x + Math.random() * (box.w - 60);
+        const y = box.y + Math.random() * (box.h - 60);
+        const p = makeIon(ion.type, x, y, { stageBox: box });
+        stages[1].appendChild(p.el);
+        particles.push(p);
+        p.el.classList.add('arrival');
+      }
+    });
+  } else {
+    bulb.className = 'bulb';
+    badge.className = 'result-badge on nonelectrolyte';
+    badge.textContent = `❌ 電流が流れない → ${sub.name}は非電解質`;
+    sfxReject();
+    for (let k = 0; k < 5; k++) {
+      const mol = document.createElement('div');
+      mol.className = 'molecule';
+      mol.innerHTML = `<span class="icon">${sub.molecule}</span>${sub.jp}`;
+      mol.style.left = (box.x + Math.random() * (box.w - 100)) + 'px';
+      mol.style.top = (box.y + 20 + k*40) + 'px';
+      stages[1].appendChild(mol);
+    }
+  }
+}
+
+document.getElementById('next1').addEventListener('click', () => startStage2());
+
+// ===== ステージ2：電離 =====
+let stage2Dissolved = 0;
+
+function startStage2() {
+  stage2Dissolved = 0;
+  document.getElementById('counter2').textContent = 'バラバラに：0こ';
+  document.getElementById('next2').disabled = true;
+  document.getElementById('evaporate2').disabled = true;
+  clearParticles();
+  stages[2].querySelectorAll('.molecule, .spark, .cloud').forEach(m => m.remove());
+  // 水を元に戻す
+  const water2 = document.querySelector('#stage2 .beaker.s2 .water');
+  if (water2) water2.style.height = '80%';
+  showStage(2);
+  setTimeout(() => {
+    const beaker = document.querySelector('#stage2 .beaker.s2');
+    const rect = beaker.getBoundingClientRect();
+    for (let i = 0; i < 5; i++) {
+      const crystal = document.createElement('div');
+      crystal.className = 'molecule';
+      crystal.style.cursor = 'pointer';
+      crystal.style.pointerEvents = 'auto';
+      crystal.innerHTML = `<span class="icon">🧂</span>NaCl`;
+      const cx = rect.left + 20 + Math.random() * (rect.width - 100);
+      const cy = rect.top + 40 + (i%3)*60 + Math.random()*15;
+      crystal.style.left = cx + 'px';
+      crystal.style.top = cy + 'px';
+      crystal.addEventListener('click', () => dissolveCrystal(crystal));
+      stages[2].appendChild(crystal);
+    }
+  }, 100);
+}
+
+function dissolveCrystal(crystal) {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  sfxPair();
+  const cx = parseFloat(crystal.style.left);
+  const cy = parseFloat(crystal.style.top);
+  crystal.remove();
+  const beaker = document.querySelector('#stage2 .beaker.s2');
+  const rect = beaker.getBoundingClientRect();
+  const box = { x: rect.left + 10, y: rect.top + 30, w: rect.width - 80, h: rect.height - 60 };
+  const na = makeIon('na', cx - 8, cy, { stageBox: box });
+  const cl = makeIon('cl', cx + 40, cy, { stageBox: box });
+  na.vx = (Math.random()-0.5)*6; na.vy = Math.random()*3;
+  cl.vx = (Math.random()-0.5)*6; cl.vy = Math.random()*3;
+  stages[2].appendChild(na.el);
+  stages[2].appendChild(cl.el);
+  na.el.classList.add('arrival');
+  cl.el.classList.add('arrival');
+  particles.push(na, cl);
+  sparkAt(cx + 30, cy + 10);
+  stage2Dissolved++;
+  document.getElementById('counter2').textContent = `バラバラに：${stage2Dissolved}こ`;
+  if (stage2Dissolved >= 3) {
+    document.getElementById('evaporate2').disabled = false;
+  }
+}
+
+document.getElementById('evaporate2').addEventListener('click', () => {
+  document.getElementById('evaporate2').disabled = true;
+  sfxWater();
+  // ビーカーの水本体を蒸発（手動アニメ：transition依存しない）
+  const beaker2 = document.querySelector('#stage2 .beaker.s2');
+  const water2 = beaker2.querySelector('.water');
+  if (water2) {
+    water2.style.transition = 'none';
+    let h = 80;
+    const evapAnim2 = setInterval(() => {
+      h -= 1;
+      water2.style.height = h + '%';
+      if (h <= 0) clearInterval(evapAnim2);
+    }, 22);
+  }
+  const bRect = beaker2.getBoundingClientRect();
+  // 蒸気エフェクト
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'cloud';
+      c.textContent = '💨';
+      c.style.left = (bRect.left + 20 + Math.random() * (bRect.width - 40)) + 'px';
+      c.style.top = (bRect.top + 20) + 'px';
+      stages[2].appendChild(c);
+      setTimeout(() => c.remove(), 2200);
+    }, i * 200);
+  }
+  // 水が引いた後にNaClに戻す
+  const startDelay = 800;
+  const naList = particles.filter(p => p.type==='na' && !p.paired);
+  const clList = particles.filter(p => p.type==='cl' && !p.paired);
+  const n = Math.min(naList.length, clList.length);
+  for (let i = 0; i < n; i++) {
+    const a = naList[i], b = clList[i];
+    a.paired = true; b.paired = true;
+    setTimeout(() => {
+      // ビーカー底近くに配置
+      const cx = bRect.left + 20 + (i % 3) * 70;
+      const cy = bRect.top + bRect.height - 50;
+      a.el.classList.add('disappearing');
+      b.el.classList.add('disappearing');
+      setTimeout(() => { a.el.remove(); b.el.remove(); particles = particles.filter(p => p!==a && p!==b); }, 800);
+      const crystal = document.createElement('div');
+      crystal.className = 'molecule';
+      crystal.innerHTML = `<span class="icon">🧂</span>NaCl`;
+      crystal.style.left = cx + 'px';
+      crystal.style.top = cy + 'px';
+      stages[2].appendChild(crystal);
+      sparkAt(cx + 30, cy + 10);
+      sfxSuccess();
+    }, startDelay + i * 300);
+  }
+  setTimeout(() => { document.getElementById('next2').disabled = false; }, startDelay + n * 300 + 500);
+});
+
+document.getElementById('back2').addEventListener('click', () => startStage1());
+document.getElementById('next2').addEventListener('click', () => startStage3());
+
+// ===== ステージ3：電気分解 =====
+let stage3Cu = 0, stage3Cl2 = 0;
+let stage3Interval = null;
+
+function startStage3() {
+  stage3Cu = 0; stage3Cl2 = 0;
+  if (stage3Interval) { clearInterval(stage3Interval); stage3Interval = null; }
+  document.getElementById('counter3').textContent = 'Cu：0 ／ Cl₂：0';
+  document.getElementById('next3').disabled = true;
+  document.getElementById('powerOn3').disabled = false;
+  document.getElementById('powerOn3').textContent = '🔌 電気ON';
+  clearParticles();
+  stages[3].querySelectorAll('.molecule').forEach(m => m.remove());
+  showStage(3);
+  setTimeout(placeCuCl2, 100);
+}
+
+function placeCuCl2() {
+  const beaker = document.querySelector('#stage3 .beaker.s3');
+  const rect = beaker.getBoundingClientRect();
+  const box = { x: rect.left + 6, y: rect.top + 30, w: rect.width - 12, h: rect.height - 60 };
+  for (let i = 0; i < 2; i++) {
+    const p = makeIon('cu', box.x + 20 + Math.random()*(box.w-100), box.y + 20 + Math.random()*(box.h-60), { stageBox: box });
+    stages[3].appendChild(p.el);
+    particles.push(p);
+  }
+  for (let i = 0; i < 4; i++) {
+    const p = makeIon('cl', box.x + 20 + Math.random()*(box.w-100), box.y + 50 + Math.random()*(box.h-80), { stageBox: box });
+    stages[3].appendChild(p.el);
+    particles.push(p);
+  }
+}
+
+document.getElementById('powerOn3').addEventListener('click', () => {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  if (stage3Interval) return;
+  sfxClick();
+  document.getElementById('powerOn3').textContent = '🔌 ながれ中…';
+  document.getElementById('powerOn3').disabled = true;
+
+  const beaker = document.querySelector('#stage3 .beaker.s3');
+
+  stage3Interval = setInterval(() => {
+    const beakerRect = beaker.getBoundingClientRect();
+    const minusPoleX = beakerRect.left + beakerRect.width * 0.20;
+    const plusPoleX = beakerRect.left + beakerRect.width * 0.80;
+    for (const p of particles.slice()) {
+      if (p.paired) continue;
+      if (p.charge > 0) {
+        const dx = minusPoleX - p.x;
+        // 直接位置更新（rAFに依存しない）
+        p.x += Math.sign(dx) * Math.min(4, Math.abs(dx));
+        p.y += (Math.random() - 0.5) * 2;
+        p.el.style.left = p.x + 'px';
+        p.el.style.top = p.y + 'px';
+        if (p.type === 'cu' && Math.abs(dx) < 40) {
+          p.paired = true;
+          p.el.classList.add('disappearing');
+          setTimeout(() => { p.el.remove(); particles = particles.filter(x => x!==p); }, 800);
+          const cu = document.createElement('div');
+          cu.className = 'molecule';
+          cu.innerHTML = `<span class="icon">🟤</span>Cu`;
+          cu.style.left = (minusPoleX - 30) + 'px';
+          cu.style.top = (beakerRect.top + 60 + stage3Cu * 34) + 'px';
+          stages[3].appendChild(cu);
+          sparkAt(minusPoleX, p.y + 30);
+          sfxSuccess();
+          stage3Cu++;
+          document.getElementById('counter3').textContent = `Cu：${stage3Cu} ／ Cl₂：${stage3Cl2}`;
+        }
+      } else {
+        const dx = plusPoleX - p.x;
+        p.x += Math.sign(dx) * Math.min(4, Math.abs(dx));
+        p.y += (Math.random() - 0.5) * 2;
+        p.el.style.left = p.x + 'px';
+        p.el.style.top = p.y + 'px';
+        if (p.type === 'cl' && Math.abs(dx) < 50) {
+          const other = particles.find(q => q !== p && q.type === 'cl' && !q.paired && Math.abs(q.x - plusPoleX) < 100);
+          if (other) {
+            p.paired = true; other.paired = true;
+            p.el.classList.add('disappearing');
+            other.el.classList.add('disappearing');
+            setTimeout(() => {
+              p.el.remove(); other.el.remove();
+              particles = particles.filter(x => x!==p && x!==other);
+            }, 800);
+            const gas = document.createElement('div');
+            gas.className = 'molecule';
+            gas.innerHTML = `<span class="icon">🫧</span>Cl₂`;
+            gas.style.left = (plusPoleX - 20) + 'px';
+            gas.style.top = (beakerRect.top + 30) + 'px';
+            stages[3].appendChild(gas);
+            sparkAt(plusPoleX, p.y + 30);
+            sfxSuccess();
+            stage3Cl2++;
+            document.getElementById('counter3').textContent = `Cu：${stage3Cu} ／ Cl₂：${stage3Cl2}`;
+            let t = 0;
+            const up = setInterval(() => {
+              t++;
+              gas.style.top = (parseFloat(gas.style.top) - 2) + 'px';
+              if (t > 40) { clearInterval(up); gas.style.opacity = '0.5'; }
+            }, 30);
+          }
+        }
+      }
+    }
+    if (stage3Cu >= 2 && stage3Cl2 >= 2) {
+      clearInterval(stage3Interval);
+      stage3Interval = null;
+      document.getElementById('powerOn3').textContent = '✅ 完了';
+      document.getElementById('next3').disabled = false;
+    }
+  }, 80);
+});
+
+document.getElementById('back3').addEventListener('click', () => {
+  if (stage3Interval) { clearInterval(stage3Interval); stage3Interval = null; }
+  startStage2();
+});
+document.getElementById('next3').addEventListener('click', () => {
+  if (stage3Interval) { clearInterval(stage3Interval); stage3Interval = null; }
+  startStage4();
+});
+
+// ===== ステージ4：化合物づくり =====
+const COMPOUNDS = [
+  { cation:'na', anion:'cl', name:'塩化ナトリウム', formula:'NaCl',    cN:1, aN:1 },
+  { cation:'cu', anion:'cl', name:'塩化銅',       formula:'CuCl₂',   cN:1, aN:2 },
+  { cation:'ca', anion:'cl', name:'塩化カルシウム', formula:'CaCl₂',   cN:1, aN:2 },
+  { cation:'na', anion:'so4', name:'硫酸ナトリウム', formula:'Na₂SO₄',  cN:2, aN:1 },
+];
+let stage4Index = 0;
+let stage4Made = 0;
+let stage4Dropped = { cation:0, anion:0 };
+
+function startStage4() {
+  stage4Index = 0; stage4Made = 0;
+  document.getElementById('counter4').textContent = '作った化合物：0／4';
+  document.getElementById('next4').disabled = true;
+  setupStage4Round();
+  showStage(4);
+}
+
+function setupStage4Round() {
+  clearParticles();
+  stages[4].querySelectorAll('.ion-compound, .molecule, .speech, .spark').forEach(e => e.remove());
+  stage4Dropped = { cation:0, anion:0 };
+  const q = COMPOUNDS[stage4Index];
+  const card = document.createElement('div');
+  card.className = 'ion-compound';
+  card.id = 'targetCard4';
+  card.style.left = '50%';
+  card.style.top = '62%';
+  card.style.transform = 'translate(-50%, -50%)';
+  card.style.width = '220px';
+  card.style.height = '140px';
+  card.style.border = '3px dashed #ffb6d1';
+  card.innerHTML = `
+    <div style="font-size:13px; color:#555;">つくりたい：</div>
+    <div style="font-size:22px; color:#e85a8c;">${q.formula}</div>
+    <div class="sub">${q.name}</div>
+    <div class="sub" id="progress4">${IONS[q.cation].symbol}：0／${q.cN}　${IONS[q.anion].symbol}：0／${q.aN}</div>
+  `;
+  stages[4].appendChild(card);
+  const W = window.innerWidth;
+  for (let i = 0; i < q.cN + 2; i++) {
+    const x = 20 + (i%2)*70;
+    const y = 180 + Math.floor(i/2)*85;
+    const p = makeIon(q.cation, x, y);
+    stages[4].appendChild(p.el);
+    particles.push(p);
+  }
+  const aDef = IONS[q.anion];
+  const rightBase = W - (aDef.size==='big' ? 120 : 100);
+  for (let i = 0; i < q.aN + 2; i++) {
+    const x = rightBase - (i%2)*70;
+    const y = 180 + Math.floor(i/2)*85;
+    const p = makeIon(q.anion, x, y);
+    stages[4].appendChild(p.el);
+    particles.push(p);
+  }
+}
+
+function onDropStage4(p) {
+  const q = COMPOUNDS[stage4Index];
+  const card = document.getElementById('targetCard4');
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+  const inside = p.x + 30 > rect.left && p.x + 30 < rect.right && p.y + 30 > rect.top && p.y + 30 < rect.bottom;
+  if (!inside) return;
+  if (p.type === q.cation && stage4Dropped.cation < q.cN) {
+    stage4Dropped.cation++;
+    p.paired = true; p.locked = true;
+    const targetX = rect.left + 20 + (stage4Dropped.cation - 1) * 40;
+    const targetY = rect.top + rect.height - 50;
+    p.x = targetX; p.y = targetY;
+    p.el.style.transform = 'scale(0.55)';
+    sfxPair();
+    updateStage4Progress();
+  } else if (p.type === q.anion && stage4Dropped.anion < q.aN) {
+    stage4Dropped.anion++;
+    p.paired = true; p.locked = true;
+    const targetX = rect.right - 55 - (stage4Dropped.anion - 1) * 40;
+    const targetY = rect.top + rect.height - 50;
+    p.x = targetX; p.y = targetY;
+    p.el.style.transform = 'scale(0.55)';
+    sfxPair();
+    updateStage4Progress();
+  } else {
+    sfxReject();
+    showSpeech(p, 'もういっぱい！');
+    p.vx = (Math.random()-0.5)*8;
+    p.vy = -5;
+  }
+  if (stage4Dropped.cation >= q.cN && stage4Dropped.anion >= q.aN) {
+    setTimeout(finishStage4Round, 400);
+  }
+}
+
+function showSpeech(p, text) {
+  const s = document.createElement('div');
+  s.className = 'speech';
+  s.textContent = text;
+  s.style.left = (p.x - 20) + 'px';
+  s.style.top = (p.y - 25) + 'px';
+  stages[4].appendChild(s);
+  setTimeout(() => s.remove(), 1500);
+}
+
+function updateStage4Progress() {
+  const q = COMPOUNDS[stage4Index];
+  const prog = document.getElementById('progress4');
+  if (prog) {
+    prog.innerHTML = `${IONS[q.cation].symbol}：${stage4Dropped.cation}／${q.cN}　${IONS[q.anion].symbol}：${stage4Dropped.anion}／${q.aN}`;
+  }
+}
+
+function finishStage4Round() {
+  const card = document.getElementById('targetCard4');
+  if (card) {
+    const rect = card.getBoundingClientRect();
+    sparkAt(rect.left + rect.width/2, rect.top + rect.height/2, '🎉');
+    sfxSuccess();
+  }
+  stage4Made++;
+  document.getElementById('counter4').textContent = `作った化合物：${stage4Made}／4`;
+  stage4Index++;
+  if (stage4Index >= COMPOUNDS.length) {
+    document.getElementById('next4').disabled = false;
+  } else {
+    setTimeout(setupStage4Round, 1200);
+  }
+}
+
+document.getElementById('reset4').addEventListener('click', () => setupStage4Round());
+document.getElementById('back4').addEventListener('click', () => startStage3());
+document.getElementById('next4').addEventListener('click', () => startStage5());
+
+// ===== ステージ5：中和 =====
+let stage5H = 0, stage5OH = 0, stage5Na = 0, stage5Cl = 0, stage5Water = 0;
+let stage5MixCount = 0;
+
+function startStage5() {
+  stage5H = 0; stage5OH = 0; stage5Na = 0; stage5Cl = 0; stage5Water = 0; stage5MixCount = 0;
+  document.getElementById('counter5').textContent = 'H₂O：0こ';
+  document.getElementById('finish5').disabled = true;
+  document.getElementById('evaporate5').disabled = true;
+  document.getElementById('mix5').disabled = false;
+  document.getElementById('mix5').textContent = '💧 混ぜる';
+  document.getElementById('msg5').innerHTML = '<span class="stage-label">ちゅうわ</span>塩酸(H⁺)と水酸化ナトリウム(OH⁻)を混ぜると？<div class="hint">H⁺とOH⁻があうと何になる？</div>';
+  document.getElementById('phMarker').dataset.ph = 'pH 1';
+  document.getElementById('water5a').className = 'water acid';
+  document.getElementById('water5b').className = 'water alkali';
+  document.getElementById('water5a').style.height = '80%';
+  document.getElementById('water5b').style.height = '80%';
+  clearParticles();
+  stages[5].querySelectorAll('.molecule, .spark, .cloud').forEach(m => m.remove());
+  showStage(5);
+  setTimeout(placeStage5Initial, 100);
+}
+
+function placeStage5Initial() {
+  const leftBeaker = document.querySelector('#stage5 .beaker.s5-left');
+  const lRect = leftBeaker.getBoundingClientRect();
+  const lBox = { x: lRect.left + 8, y: lRect.top + 20, w: lRect.width - 70, h: lRect.height - 40 };
+  for (let i = 0; i < 4; i++) {
+    const h = makeIon('h', lBox.x + Math.random()*(lBox.w-30), lBox.y + Math.random()*(lBox.h-30), {stageBox: lBox});
+    const cl = makeIon('cl', lBox.x + Math.random()*(lBox.w-30), lBox.y + Math.random()*(lBox.h-30), {stageBox: lBox});
+    stages[5].appendChild(h.el); stages[5].appendChild(cl.el);
+    particles.push(h, cl);
+    stage5H++; stage5Cl++;
+  }
+  const rightBeaker = document.querySelector('#stage5 .beaker.s5-right');
+  const rRect = rightBeaker.getBoundingClientRect();
+  const rBox = { x: rRect.left + 8, y: rRect.top + 20, w: rRect.width - 70, h: rRect.height - 40 };
+  for (let i = 0; i < 4; i++) {
+    const na = makeIon('na', rBox.x + Math.random()*(rBox.w-30), rBox.y + Math.random()*(rBox.h-30), {stageBox: rBox});
+    const oh = makeIon('oh', rBox.x + Math.random()*(rBox.w-30), rBox.y + Math.random()*(rBox.h-30), {stageBox: rBox});
+    stages[5].appendChild(na.el); stages[5].appendChild(oh.el);
+    particles.push(na, oh);
+    stage5Na++; stage5OH++;
+  }
+  updatePh();
+}
+
+document.getElementById('mix5').addEventListener('click', () => {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  stage5MixCount++;
+  sfxWater();
+  const rightBeaker = document.querySelector('#stage5 .beaker.s5-right');
+  const leftBeaker = document.querySelector('#stage5 .beaker.s5-left');
+  const rRect = rightBeaker.getBoundingClientRect();
+  const lRect = leftBeaker.getBoundingClientRect();
+  const lBox = { x: lRect.left + 8, y: lRect.top + 20, w: lRect.width - 70, h: lRect.height - 40 };
+  const moveCount = 2;
+  const ohCandidates = particles.filter(p => p.type === 'oh' && !p.paired && p.stageBox && p.stageBox.x > rRect.left - 10);
+  const naCandidates = particles.filter(p => p.type === 'na' && !p.paired && p.stageBox && p.stageBox.x > rRect.left - 10);
+  const moveOH = ohCandidates.slice(0, moveCount);
+  const moveNa = naCandidates.slice(0, moveCount);
+  moveOH.forEach((p, i) => {
+    p.stageBox = lBox;
+    p.x = lRect.left + 10 + Math.random()*30;
+    p.y = lRect.top + 30 + Math.random()*30;
+  });
+  moveNa.forEach((p, i) => {
+    p.stageBox = lBox;
+    p.x = lRect.left + 10 + Math.random()*30;
+    p.y = lRect.top + 40 + Math.random()*30;
+  });
+  setTimeout(() => {
+    const hList = particles.filter(p => p.type === 'h' && !p.paired);
+    const ohList = moveOH.filter(p => !p.paired);
+    const n = Math.min(hList.length, ohList.length, moveCount);
+    for (let i = 0; i < n; i++) {
+      const a = hList[i], b = ohList[i];
+      a.paired = true; b.paired = true;
+      setTimeout(() => {
+        const cx = (a.x + b.x)/2;
+        const cy = (a.y + b.y)/2;
+        a.el.classList.add('disappearing');
+        b.el.classList.add('disappearing');
+        setTimeout(() => {
+          a.el.remove(); b.el.remove();
+          particles = particles.filter(p => p !== a && p !== b);
+        }, 800);
+        const water = document.createElement('div');
+        water.className = 'molecule';
+        water.innerHTML = `<span class="icon">💧</span>H₂O`;
+        water.style.left = cx + 'px';
+        water.style.top = cy + 'px';
+        stages[5].appendChild(water);
+        sparkAt(cx + 20, cy + 10, '💧');
+        sfxSuccess();
+        stage5Water++;
+        stage5H--; stage5OH--;
+        document.getElementById('counter5').textContent = `H₂O：${stage5Water}こ`;
+        updatePh();
+      }, i * 300);
+    }
+    if (stage5MixCount >= 2) {
+      document.getElementById('mix5').disabled = true;
+      document.getElementById('evaporate5').disabled = false;
+      setTimeout(() => {
+        document.getElementById('msg5').innerHTML = '<span class="stage-label">ちゅうわ</span>ぴったり中性に！<br>H⁺もOH⁻も全部 H₂O になった！<div class="hint">Na⁺とCl⁻が残ってるよ。じょうはつさせてみよう</div>';
+      }, n * 300 + 200);
+    }
+  }, 600);
+});
+
+function updatePh() {
+  const diff = stage5H - stage5OH;
+  let phVal = 7 - diff * 1.5;
+  phVal = Math.max(1, Math.min(13, phVal));
+  const barTop = 100;
+  const marker = document.getElementById('phMarker');
+  // barの左端位置を計算
+  const bar = document.querySelector('#stage5 .ph-bar');
+  if (bar) {
+    const barRect = bar.getBoundingClientRect();
+    const leftPx = barRect.left + (phVal - 1) / 12 * barRect.width - 4;
+    marker.style.left = leftPx + 'px';
+    marker.style.top = (barRect.top - 8) + 'px';
+  }
+  marker.dataset.ph = 'pH ' + Math.round(phVal);
+  const water5a = document.getElementById('water5a');
+  if (phVal < 6) water5a.className = 'water acid';
+  else if (phVal > 8) water5a.className = 'water alkali';
+  else water5a.className = 'water neutral';
+}
+
+document.getElementById('evaporate5').addEventListener('click', () => {
+  document.getElementById('evaporate5').disabled = true;
+  sfxWater();
+  // ビーカーの水本体を蒸発（手動アニメ：transition依存しない）
+  const w5a = document.getElementById('water5a');
+  const w5b = document.getElementById('water5b');
+  w5a.style.transition = 'none';
+  w5b.style.transition = 'none';
+  let h5 = 80;
+  const evapAnim5 = setInterval(() => {
+    h5 -= 1;
+    w5a.style.height = h5 + '%';
+    w5b.style.height = h5 + '%';
+    if (h5 <= 0) clearInterval(evapAnim5);
+  }, 22);
+  // 蒸気エフェクト
+  const leftBeakerRect = document.querySelector('#stage5 .beaker.s5-left').getBoundingClientRect();
+  const rightBeakerRect = document.querySelector('#stage5 .beaker.s5-right').getBoundingClientRect();
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const baseRect = (i % 2 === 0) ? leftBeakerRect : rightBeakerRect;
+      const c = document.createElement('div');
+      c.className = 'cloud';
+      c.textContent = '💨';
+      c.style.left = (baseRect.left + Math.random() * baseRect.width) + 'px';
+      c.style.top = (baseRect.top + 10) + 'px';
+      stages[5].appendChild(c);
+      setTimeout(() => c.remove(), 2200);
+    }, i * 180);
+  }
+  // H2O分子は早めに消す
+  setTimeout(() => {
+    stages[5].querySelectorAll('.molecule').forEach(m => {
+      if (m.textContent.includes('H₂O')) {
+        m.style.transition = 'opacity 0.6s';
+        m.style.opacity = '0';
+        setTimeout(() => m.remove(), 600);
+      }
+    });
+  }, 300);
+  // イオンが水引きに従って集まり、結晶に
+  const naList = particles.filter(p => p.type === 'na' && !p.paired);
+  const clList = particles.filter(p => p.type === 'cl' && !p.paired);
+  const n = Math.min(naList.length, clList.length);
+  // 蒸発アニメ（1.8s）が進んだ後にNaCl化
+  const startDelay = 800;
+  for (let i = 0; i < n; i++) {
+    const a = naList[i], b = clList[i];
+    a.paired = true; b.paired = true;
+    setTimeout(() => {
+      // ビーカー底近くに配置
+      const targetBeaker = (i < 2) ? leftBeakerRect : rightBeakerRect;
+      const cx = targetBeaker.left + 20 + (i % 2) * 50;
+      const cy = targetBeaker.top + targetBeaker.height - 50;
+      a.el.classList.add('disappearing');
+      b.el.classList.add('disappearing');
+      setTimeout(() => { a.el.remove(); b.el.remove(); particles = particles.filter(p => p!==a && p!==b); }, 800);
+      const salt = document.createElement('div');
+      salt.className = 'molecule';
+      salt.innerHTML = `<span class="icon">🧂</span>NaCl`;
+      salt.style.left = cx + 'px';
+      salt.style.top = cy + 'px';
+      stages[5].appendChild(salt);
+      sparkAt(cx + 20, cy + 10);
+      sfxSuccess();
+    }, startDelay + i * 300);
+  }
+  setTimeout(() => {
+    document.getElementById('msg5').innerHTML = '<span class="stage-label">えん（塩）</span>水がなくなって、「塩（しお）」NaCl が残った！<div class="hint">酸とアルカリが中和すると、水と塩ができる</div>';
+    document.getElementById('finish5').disabled = false;
+  }, startDelay + n * 300 + 500);
+});
+
+document.getElementById('back5').addEventListener('click', () => startStage4());
+document.getElementById('finish5').addEventListener('click', () => { finale.classList.add('show'); });
+
+document.getElementById('restart').addEventListener('click', () => {
+  finale.classList.remove('show');
+  startStage1();
+});
+
+startStage1();
+
+window.addEventListener('resize', () => {
+  for (const p of particles) clampToBox(p);
+  if (currentStage === 5) updatePh();
+});
+</script>
+</body>
+</html>
