@@ -36,15 +36,15 @@
     pointer-events: none;
   }
   .title {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: bold;
     color: #4a7ec8;
     text-shadow: 0 2px 0 #fff, 0 0 8px rgba(255,255,255,0.9);
     pointer-events: auto;
   }
-  .stage-indicator { display: flex; gap: 5px; pointer-events: auto; }
+  .stage-indicator { display: flex; gap: 6px; pointer-events: auto; }
   .dot {
-    width: 12px; height: 12px; border-radius: 50%;
+    width: 14px; height: 14px; border-radius: 50%;
     background: #fff; border: 2px solid #b6d1ff;
     transition: all 0.3s;
   }
@@ -55,29 +55,29 @@
 
   .message {
     position: absolute;
-    top: 36px;
+    top: 40px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(255,255,255,0.95);
-    padding: 8px 14px;
-    border-radius: 16px;
-    font-size: 13px;
+    padding: 10px 18px;
+    border-radius: 18px;
+    font-size: 15px;
     font-weight: bold;
     color: #555;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     z-index: 10;
     text-align: center;
-    max-width: 86%;
-    line-height: 1.4;
+    max-width: 90%;
+    line-height: 1.5;
   }
-  .message .hint { font-size: 10px; font-weight: normal; color: #999; margin-top: 2px; }
+  .message .hint { font-size: 12px; font-weight: normal; color: #999; margin-top: 3px; }
   .message .stage-label {
     display: inline-block;
     background: #ffd88a;
     color: #8b5a00;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 11px;
+    font-size: 12px;
     margin-right: 6px;
   }
 
@@ -234,10 +234,10 @@
     overflow: hidden;
     z-index: 2;
   }
-  .beaker.s1 { bottom: 90px; width: min(260px, 90%); height: 260px; }
-  .beaker.s2 { bottom: 90px; width: min(300px, 94%); height: 290px; }
-  .beaker.s3 { bottom: 90px; width: min(340px, 94%); height: 290px; }
-  .beaker.s5-left, .beaker.s5-right { bottom: 90px; width: min(140px, 38%); height: 240px; }
+  .beaker.s1 { bottom: 90px; width: min(340px, 88%); height: 280px; }
+  .beaker.s2 { bottom: 90px; width: min(380px, 92%); height: 310px; }
+  .beaker.s3 { bottom: 90px; width: min(440px, 94%); height: 320px; }
+  .beaker.s5-left, .beaker.s5-right { bottom: 90px; width: min(200px, 42%); height: 270px; }
   .beaker.s5-left { left: 22%; transform: none; }
   .beaker.s5-right { left: 58%; transform: none; }
 
@@ -304,33 +304,33 @@
 
   .substance-picker {
     position: absolute;
-    top: 105px;
+    top: 115px;
     left: 50%;
     transform: translateX(-50%);
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
+    gap: 8px;
     width: 94%;
-    max-width: 360px;
+    max-width: 500px;
     z-index: 11;
   }
   .substance {
-    padding: 6px 4px;
+    padding: 10px 6px;
     background: #fff;
     border: 2px solid #ddd;
-    border-radius: 11px;
-    font-size: 10.5px;
+    border-radius: 14px;
+    font-size: 13px;
     font-weight: bold;
     color: #555;
     cursor: pointer;
     transition: all 0.15s;
     font-family: inherit;
     text-align: center;
-    line-height: 1.2;
+    line-height: 1.3;
   }
   .substance:hover { transform: translateY(-2px); }
   .substance.selected { background: #ffd88a; border-color: #f5b820; color: #8b5a00; }
-  .substance .icon { font-size: 13px; margin-right: 1px; display: block; margin-bottom: 1px; }
+  .substance .icon { font-size: 22px; display: block; margin-bottom: 2px; }
 
   .result-badge {
     position: absolute;
