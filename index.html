@@ -1111,6 +1111,7 @@ document.getElementById('powerOn3').addEventListener('click', () => {
         // 直接位置更新（rAFに依存しない）
         p.x += Math.sign(dx) * Math.min(4, Math.abs(dx));
         p.y += (Math.random() - 0.5) * 2;
+        clampToBox(p);
         p.el.style.left = p.x + 'px';
         p.el.style.top = p.y + 'px';
         if (p.type === 'cu' && Math.abs(dx) < 40) {
@@ -1132,6 +1133,7 @@ document.getElementById('powerOn3').addEventListener('click', () => {
         const dx = plusPoleX - p.x;
         p.x += Math.sign(dx) * Math.min(4, Math.abs(dx));
         p.y += (Math.random() - 0.5) * 2;
+        clampToBox(p);
         p.el.style.left = p.x + 'px';
         p.el.style.top = p.y + 'px';
         if (p.type === 'cl' && Math.abs(dx) < 50) {
